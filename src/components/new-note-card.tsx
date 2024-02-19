@@ -6,6 +6,8 @@ import { toast } from 'sonner'
 interface NewNoteCardProps{
   onNoteCreated: (content: string) => void
 }
+let speechRecognition: SpeechRecognition | null = null
+
 
 export function NewNoteCard({onNoteCreated}:NewNoteCardProps){
     const [shouldShowOnBoarding, setShouldShowOnBoarding] = useState(true)
@@ -14,9 +16,7 @@ export function NewNoteCard({onNoteCreated}:NewNoteCardProps){
     const [content,setContent] = useState('')
     const [isRecording,setIsRecording] = useState(false)
     
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition
-
-    const speechRecognition = new SpeechRecognitionAPI()
+    
 
     function handleStartEditor(){
       setShouldShowOnBoarding(false)
@@ -52,7 +52,10 @@ export function NewNoteCard({onNoteCreated}:NewNoteCardProps){
     }
 
     function handleStartRecording (){
-      setIsRecording(true)
+
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition
+
+      speechRecognition = new SpeechRecognitionAPI()
 
       const isSpeechRecognitionAPIAvailable = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window
 
@@ -63,6 +66,9 @@ export function NewNoteCard({onNoteCreated}:NewNoteCardProps){
         return
       }
 
+      setIsRecording(true)
+      setShouldShowOnBoarding(false)
+
       speechRecognition.lang = "pt-BR"
       //nao para de gravar ate falar para parar the gravar
       speechRecognition.continuous = true
@@ -72,7 +78,9 @@ export function NewNoteCard({onNoteCreated}:NewNoteCardProps){
       speechRecognition.interimResults = true
 
       speechRecognition.onresult = (event) => {
-        console.log(event.results)
+        const transcription = Array.from(event.results).reduce((text, result) =>{
+          return text.concat(result[0].transcript)
+        }, '')
       }
 
       speechRecognition.onerror = (event) => {
@@ -84,6 +92,9 @@ export function NewNoteCard({onNoteCreated}:NewNoteCardProps){
 
     function handleStopRecording (){
       setIsRecording(false)
+
+      if(speechRecognition != null)
+        speechRecognition.stop()
 
       
     }
